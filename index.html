@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClockWise</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <h1>ClockWise</h1>
+
+    <div class="timer-container">
+      <svg class="progress-ring" width="200" height="200">
+        <circle class="progress-ring__circle" 
+                stroke="blue" 
+                stroke-width="10" 
+                fill="transparent" 
+                r="90" 
+                cx="100" 
+                cy="100"/>
+      </svg>
+      <div class="time-display" id="time-display">00:00</div>
+    </div>
+
+    <div class="task-notes">
+      <h2>Task Notes</h2>
+      <textarea id="task-input" placeholder="What are you focusing on?"></textarea>
+    </div>
+
+    <div class="modes">
+      <button onclick="setMode(10)">10 Min</button>
+      <button onclick="setMode(25)">25 Min</button>
+      <button onclick="setMode(50)">50 Min</button>
+      <button onclick="setTestMode()">Test (5s)</button>
+    </div>
+
+    <div class="controls">
+      <button onclick="startTimer()">Start</button>
+      <button onclick="pauseTimer()">Pause</button>
+      <button onclick="resetTimer()">Reset</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

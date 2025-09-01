@@ -1,0 +1,58 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f5f5;
+  text-align: center;
+  padding: 30px;
+}
+
+.app {
+  max-width: 400px;
+  margin: auto;
+}
+
+h1 {
+  margin-bottom: 20px;
+}
+
+.timer-container {
+  position: relative;
+  display: inline-block;
+}
+
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+.time-display {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.modes button,
+.controls button {
+  margin: 5px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.modes button:hover,
+.controls button:hover {
+  background: #ddd;
+}
+
+.alert {
+  margin-top: 20px;
+  color: red;
+  font-weight: bold;
+}
+
+.hidden {
+  display: none;
+}
