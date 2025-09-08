@@ -7,38 +7,55 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app">
-    <h1>ClockWise</h1>
+  <div class="container">
+    <div class="stats-panel">
+      <h2>Stats</h2>
+      <p>Sprints Today: <span id="sprint-count">0</span></p>
 
-    <div class="timer-container">
-      <svg class="progress-ring" width="200" height="200">
-        <circle class="progress-ring__circle" 
-                stroke="blue" 
-                stroke-width="10" 
-                fill="transparent" 
-                r="90" 
-                cx="100" 
-                cy="100"/>
-      </svg>
-      <div class="time-display" id="time-display">00:00</div>
+      <h3>Task Completion</h3>
+      <div class="task-grid" id="task-grid"></div>
+
+      <h3>Stats for Nerds</h3>
+      <p id="ai-stats">No data yet.</p>
     </div>
 
-    <div class="task-notes">
-      <h2>Task Notes</h2>
-      <textarea id="task-input" placeholder="What are you focusing on?"></textarea>
-    </div>
+    <div class="app">
+      <h1>ClockWise</h1>
 
-    <div class="modes">
-      <button onclick="setMode(10)">10 Min</button>
-      <button onclick="setMode(25)">25 Min</button>
-      <button onclick="setMode(50)">50 Min</button>
-      <button onclick="setTestMode()">Test (5s)</button>
-    </div>
+      <div class="timer-container">
+        <svg class="progress-ring" width="200" height="200">
+          <circle class="progress-ring__circle" 
+                  stroke="blue" 
+                  stroke-width="10" 
+                  fill="transparent" 
+                  r="90" 
+                  cx="100" 
+                  cy="100"/>
+        </svg>
+        <div class="time-display" id="time-display">00:00</div>
+      </div>
 
-    <div class="controls">
-      <button onclick="startTimer()">Start</button>
-      <button onclick="pauseTimer()">Pause</button>
-      <button onclick="resetTimer()">Reset</button>
+      <div class="task-notes">
+        <h2>Task Notes</h2>
+        <textarea id="task-input" placeholder="Write a task..."></textarea>
+        <button onclick="addTask()">➕ Add Task</button>
+
+        <h3>My Tasks</h3>
+        <ul id="task-list"></ul>
+      </div>
+
+      <div class="modes">
+        <button onclick="setMode(10)">10 Min</button>
+        <button onclick="setMode(25)">25 Min</button>
+        <button onclick="setMode(50)">50 Min</button>
+        <button onclick="setTestMode()">Test (5s)</button>
+      </div>
+
+      <div class="controls">
+        <button onclick="startTimer()">Start</button>
+        <button onclick="pauseTimer()">Pause</button>
+        <button onclick="resetTimer()">Reset</button>
+      </div>
     </div>
   </div>
 
