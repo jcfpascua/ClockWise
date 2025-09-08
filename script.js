@@ -163,7 +163,7 @@ async function updateAIStats(tasks, sprints) {
 
   try {
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDwiBTulWwH8_vfxD7Q2FGqJrqI2H2lbes", 
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=", 
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -184,3 +184,4 @@ async function updateAIStats(tasks, sprints) {
       "⚠️ Could not fetch AI stats.";
   }
 }
+
