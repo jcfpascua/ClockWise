@@ -1,9 +1,20 @@
+// Dark mode
+document.getElementById("dark-mode-toggle").addEventListener("click", () => {
+  document.body.classList.toggle("dark");
+  const icon = document.body.classList.contains("dark") ? "☀️" : "🌙";
+  document.getElementById("dark-mode-toggle").textContent = icon;
+});
+
+// Timer
 let duration = 0;
 let timeLeft = 0;
 let timer = null;
 let isRunning = false;
 let sprints = 0;
-let tasks = []; 
+let tasks = [];
+let mode = "focus"; // track focus/break/test
+
+// const API_KEY = "AIzaSyBRL4I7DCQeztQ9nVGfoGuoWmdwp6sbcY8";
 
 const circle = document.querySelector(".progress-ring__circle");
 const radius = circle.r.baseVal.value;
@@ -16,10 +27,11 @@ function setProgress(percent) {
   circle.style.strokeDashoffset = offset;
 }
 
-function setMode(minutes) {
+function setMode(minutes, newMode = "focus") {
   resetTimer();
   duration = minutes * 60;
   timeLeft = duration;
+  mode = newMode;
   updateDisplay();
   setProgress(0);
 }
@@ -28,14 +40,15 @@ function setTestMode() {
   resetTimer();
   duration = 5; // 5s test
   timeLeft = duration;
+  mode = "test";
   updateDisplay();
   setProgress(0);
+  startTimer();
 }
 
 function startTimer() {
   if (isRunning || timeLeft <= 0) return;
 
-  // Task checker
   if (tasks.length === 0) {
     alert("⚠️ Please add at least one task before starting the timer.");
     return;
@@ -50,13 +63,17 @@ function startTimer() {
     if (timeLeft <= 0) {
       clearInterval(timer);
       isRunning = false;
-      sprints++;
-      document.getElementById("sprint-count").textContent = sprints;
 
-      alert("⏰ Time’s up! Check off any tasks you’ve completed.");
-      renderTaskList();
-      renderTaskGrid();
-      updateAIStats(tasks, sprints);
+      if (mode === "focus") {
+        sprints++;
+        alert("⏰ Time’s up! Check your tasks.");
+        updateStatsUI();
+        updateAIStats(tasks, sprints);
+      } else if (mode === "break") {
+        alert("☕ Break’s over! Back to work!");
+      } else if (mode === "test") {
+        alert("✅ Test complete!");
+      }
     }
   }, 1000);
 }
@@ -81,89 +98,110 @@ function updateDisplay() {
     `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-// Distraction chu chu
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden && isRunning) {
-    alert("🚨 Stay focused! Your session isn’t over yet.");
-  }
-});
-
-setMode(25);
-
-// Task Handling
-function addTask() {
+// Task chuchu
+async function addTask() {
   const input = document.getElementById("task-input");
   const text = input.value.trim();
   if (!text) return;
 
   tasks.push({ text, status: "pending" });
   input.value = "";
-  renderTaskList();
-  renderTaskGrid();
+  updateTaskList();
+  updateStatsUI();
+  await updateAIStats(tasks, sprints);
 }
 
-function toggleTask(index) {
+async function toggleTask(index) {
   tasks[index].status = tasks[index].status === "done" ? "pending" : "done";
-  renderTaskList();
-  renderTaskGrid();
-  updateAIStats(tasks, sprints);
+  updateTaskList();
+  updateStatsUI();
+  await updateAIStats(tasks, sprints);
 }
 
-function renderTaskList() {
+function updateTaskList() {
   const list = document.getElementById("task-list");
   list.innerHTML = "";
-
-  tasks.forEach((t, i) => {
+  tasks.forEach((task, index) => {
     const li = document.createElement("li");
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = t.status === "done";
-    checkbox.onchange = () => toggleTask(i);
-
-    const label = document.createElement("span");
-    label.textContent = " " + t.text;
-    if (t.status === "done") label.style.textDecoration = "line-through";
-
-    li.appendChild(checkbox);
-    li.appendChild(label);
+    li.innerHTML = `
+      <input type="checkbox" onchange="toggleTask(${index})" ${task.status === "done" ? "checked" : ""}>
+      <span>${task.text}</span>
+    `;
     list.appendChild(li);
   });
 }
 
-function renderTaskGrid() {
+// Stats
+function updateStatsUI() {
+  document.getElementById("sprint-count").textContent = sprints;
   const grid = document.getElementById("task-grid");
   grid.innerHTML = "";
+
+  const isDark = document.body.classList.contains("dark");
+
   tasks.forEach(t => {
-    const box = document.createElement("div");
-    box.className = "task-box";
-    box.style.width = "20px";
-    box.style.height = "20px";
-    box.style.margin = "2px";
-    box.style.display = "inline-block";
-    box.style.background = t.status === "done" ? "green" : "red";
-    box.title = t.text;
-    grid.appendChild(box);
+    const div = document.createElement("div");
+    div.textContent = `${t.text} - ${t.status}`;
+    
+    // Background color
+    div.style.background = t.status === "done" ? "#d4edda" : "#f8d7da";
+
+    // Font color
+    if (isDark) {
+      div.style.color = t.status === "done" ? "#155724" : "#721c24"; // darker green/red for dark mode
+    } else {
+      div.style.color = t.status === "done" ? "#155724" : "#721c24"; // same for light mode
+    }
+
+    div.style.padding = "5px 10px";
+    div.style.borderRadius = "5px";
+    div.style.marginBottom = "5px";
+
+    grid.appendChild(div);
   });
 }
 
-// Gemini Part
+
+// Settings
+function startFocusTimer() {
+  const minutes = parseInt(document.getElementById("focus-time").value) || 25;
+  if (minutes <= 1) minutes = 1;
+  setMode(minutes, "focus");
+  startTimer();
+}
+
+function startBreakTimer() {
+  const minutes = parseInt(document.getElementById("break-time").value) || 5;
+  if (minutes <= 1) minutes = 1;
+  setMode(minutes, "break");
+  startTimer();
+}
+
+// Distraction alert
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && isRunning && mode === "focus") {
+    alert("🚨 Stay focused! Your session isn’t over yet.");
+  }
+});
+
+// AI
 async function updateAIStats(tasks, sprints) {
   const done = tasks.filter(t => t.status === "done").length;
   const total = tasks.length;
 
   const prompt = `
-  You are a helpful assistant analyzing productivity.
-  Stats:
-  - Finished tasks: ${done}
-  - Total tasks: ${total}
-  - Sprints completed: ${sprints}
+You are a helpful assistant analyzing productivity.
+Stats:
+- Finished tasks: ${done}
+- Total tasks: ${total}
+- Sprints completed: ${sprints}
 
-  Give a short motivational summary in under 2 sentences.
-  `;
+Give a short motivational summary in under 2 sentences.
+`;
 
   try {
     const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=", 
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -174,8 +212,13 @@ async function updateAIStats(tasks, sprints) {
     );
 
     const data = await response.json();
-    const message =
-      data.candidates?.[0]?.content?.parts?.[0]?.text || "AI didn’t return anything.";
+    console.log("AI raw response:", data);
+
+    let message = "AI didn’t return anything.";
+    if (data.candidates && data.candidates.length > 0) {
+      const parts = data.candidates[0].content?.parts || [];
+      message = parts.map(p => p.text).join(" ") || message;
+    }
 
     document.getElementById("ai-stats").textContent = message;
   } catch (err) {
@@ -185,3 +228,5 @@ async function updateAIStats(tasks, sprints) {
   }
 }
 
+// initial setup
+setMode(25, "focus");
