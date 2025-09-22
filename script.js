@@ -14,7 +14,7 @@ let sprints = 0;
 let tasks = [];
 let mode = "focus"; // track focus/break/test
 
-// const API_KEY = "AIzaSyBRL4I7DCQeztQ9nVGfoGuoWmdwp6sbcY8";
+// const API_KEY = use your own email for gemini API
 
 const circle = document.querySelector(".progress-ring__circle");
 const radius = circle.r.baseVal.value;
@@ -230,3 +230,4 @@ Give a short motivational summary in under 2 sentences.
 
 // initial setup
 setMode(25, "focus");
+
