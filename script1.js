@@ -272,7 +272,9 @@ function renderThemes() {
 
     const label = document.createElement('div');
     label.className = 'theme-label';
-    label.textContent = theme.name;
+    label.innerHTML = unlockedThemes.includes(theme.id)
+      ? `${theme.name}`
+      : `${theme.name} <span class="lock-indicator">🔒 </span>`;
 
     const div = document.createElement('div');
     div.className = 'theme-option';
@@ -281,7 +283,6 @@ function renderThemes() {
       ? theme.name
       : `${theme.name} - Unlock for 20 points`;
 
-    // 🎨 Special case for Light theme preview
     if (theme.id === 'light') {
       div.style.background = '#ffffff';
       div.style.border = '1px solid #ccc';
@@ -299,6 +300,7 @@ function renderThemes() {
     panel.appendChild(wrapper);
   });
 }
+
 
 
 function handleThemeClick(themeId) {
