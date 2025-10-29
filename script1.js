@@ -9,6 +9,9 @@ let tasks = [];
 let mode = "focus";
 let points = 0;
 let lastFocusDuration = 0;
+// EXP / LEVEL
+let exp = 0;
+let level = 1;
 
 // ========== CIRCULAR TIMER PROGRESS ==========
 const circle = document.querySelector(".progress-ring__circle");
@@ -65,6 +68,8 @@ function startTimer() {
       if (mode === "focus") {
         focusSprints++;
         points += 20;
+        // award exp for completing a sprint
+        try { addExp(5); } catch (e) { /* exp not present */ }
         updatePointsUI();
         alert("⏰ Focus complete! Take a break?");
         updateStatsUI();
@@ -122,6 +127,8 @@ function toggleTask(index) {
 
   if (prevStatus === "pending" && tasks[index].status === "done") {
     points += 10;
+    // award exp for completing a task
+    try { addExp(10); } catch (e) { /* exp not present */ }
     updatePointsUI();
   }
 
@@ -140,6 +147,11 @@ function updateTaskList() {
     `;
     list.appendChild(li);
   });
+}
+
+// ensure EXP UI updates when stats update
+function _safeUpdateExpUI() {
+  try { updateExpUI(); } catch (e) { /* ignore if not available */ }
 }
 
 // ========== STATS (Task Completion Section) ==========
@@ -177,6 +189,8 @@ function updateStatsUI() {
     div.style.transition = "all 0.2s ease";
     grid.appendChild(div);
   });
+  // update exp UI if available
+  _safeUpdateExpUI();
 }
 
 // ========== POINTS, REWARDS, THEMES ==========
@@ -248,14 +262,86 @@ function applyTheme(themeId) {
   const theme = themes.find(t => t.id === themeId);
   if (!theme) return;
   selectedTheme = themeId;
-
   document.body.style.background = theme.colors.bg;
   document.body.style.color = theme.colors.text;
   document.querySelectorAll('.stats-panel, .settings-panel, .app').forEach(el => {
     el.style.background = theme.colors.panel;
     el.style.color = theme.colors.text;
   });
+
+  // set accent as CSS variable for other UI pieces
   document.documentElement.style.setProperty('--accent', theme.colors.accent);
+
+  // Helper: convert hex to rgb
+  function hexToRgb(hex) {
+    let h = (hex || '').replace('#', '');
+    if (h.length === 3) h = h.split('').map(c => c + c).join('');
+    const num = parseInt(h, 16);
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+  }
+
+  // Helper: choose black or white depending on perceived luminance
+  function getContrastColor(hex) {
+    try {
+      const { r, g, b } = hexToRgb(hex);
+      // Perceived luminance
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      return luminance > 0.6 ? '#000000' : '#ffffff';
+    } catch (e) {
+      return '#ffffff';
+    }
+  }
+
+  // small helper to detect elements inside the task area so we can skip them
+  function isInTaskArea(el) {
+    return el && el.closest && (el.closest('#task-list') || el.closest('#task-grid') || el.closest('.task-grid'));
+  }
+
+  // Set button colors (background + contrasting text) and expose CSS vars
+  const btnBg = theme.colors.accent || '#007bff';
+  const btnText = getContrastColor(btnBg);
+  document.documentElement.style.setProperty('--button-bg', btnBg);
+  document.documentElement.style.setProperty('--button-text', btnText);
+
+  // Expose main text color as a CSS variable
+  const textColor = theme.colors.text || getContrastColor(theme.colors.bg || '#000');
+  document.documentElement.style.setProperty('--text-color', textColor);
+
+  // Apply text color to common textual elements, but skip task area elements
+  document.querySelectorAll('p, span, label, a, h1, h2, h3, h4, h5, h6, .theme-label, .reward-info, .theme-wrapper').forEach(el => {
+    if (isInTaskArea(el)) return;
+    el.style.color = textColor;
+  });
+
+  // Ensure task area remains with readable (black) text/background regardless of theme
+  // This forces the task input and task items to stay visible
+  try {
+    document.querySelectorAll('#task-list, #task-list li, #task-list li span, #task-grid, #task-grid div, #task-input').forEach(el => {
+      if (!el) return;
+      // keep text black
+      el.style.color = '#000000';
+      // ensure input has white background for contrast
+      if (el.id === 'task-input') {
+        el.style.background = '#ffffff';
+        el.style.color = '#000000';
+        el.style.borderColor = 'rgba(0,0,0,0.08)';
+      }
+    });
+  } catch (e) {
+    // ignore if elements don't exist
+  }
+
+  // Apply inline styles to interactive controls so they immediately match theme
+  // Skip controls inside the task area (task input row and task items)
+  document.querySelectorAll('button, .btn, input[type="button"], input[type="submit"]').forEach(el => {
+    if (isInTaskArea(el)) return;
+    el.style.background = btnBg;
+    el.style.color = btnText;
+    el.style.border = btnText === '#ffffff' ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)';
+    el.style.cursor = 'pointer';
+  });
+
+  // Update selection state for theme options
   document.querySelectorAll('.theme-option').forEach(opt => {
     opt.classList.toggle('selected', opt.dataset.id === themeId);
   });
@@ -276,8 +362,19 @@ function renderThemes() {
       ? `${theme.name}`
       : `${theme.name} <span class="lock-indicator">🔒 </span>`;
 
-    const div = document.createElement('div');
-    div.className = 'theme-option';
+  const div = document.createElement('div');
+  div.className = 'theme-option';
+  // extend vertically so the option is easier to tap/click
+  div.style.height = '44px';
+  div.style.display = 'inline-flex';
+  div.style.alignItems = 'center';
+  div.style.justifyContent = 'center';
+  // extend horizontally so the option has a larger hit area
+  div.style.width = '80px';
+  div.style.minWidth = '80px';
+  div.style.borderRadius = '8px';
+  div.style.boxSizing = 'border-box';
+  div.style.cursor = 'pointer';
     div.dataset.id = theme.id;
     div.dataset.tooltip = unlockedThemes.includes(theme.id)
       ? theme.name
@@ -324,6 +421,89 @@ function updatePointsDisplay() {
   if (rewardInfo) rewardInfo.textContent = `You have ${points} points.`;
 }
 
+// ========== EXP / LEVEL UI + LOGIC ==========
+function addExp(amount) {
+  if (!amount || amount <= 0) return;
+  exp += amount;
+  let leveled = false;
+  while (exp >= 30) {
+    exp -= 30;
+    level += 1;
+    leveled = true;
+  }
+  updateExpUI();
+  if (leveled) {
+    try { alert(`🎉 Level up! You reached level ${level}.`); } catch (e) { }
+  }
+}
+
+function updateExpUI() {
+  // Try to place the exp bar right after the points element in stats
+  const pointsEl = document.getElementById('points');
+  // If we can't find a stats location, fall back to inserting near the task grid
+  const grid = document.getElementById('task-grid');
+
+  let expContainer = document.getElementById('exp-container');
+  if (!expContainer) {
+    expContainer = document.createElement('div');
+    expContainer.id = 'exp-container';
+  expContainer.style.margin = '20px 0';
+    expContainer.style.padding = '8px 10px';
+    expContainer.style.borderRadius = '8px';
+    expContainer.style.background = 'transparent';
+  }
+
+  // ensure it's placed under points if possible
+  if (pointsEl) {
+    pointsEl.insertAdjacentElement('afterend', expContainer);
+  } else if (grid) {
+    grid.insertAdjacentElement('beforebegin', expContainer);
+  } else {
+    // last resort: append to body
+    document.body.appendChild(expContainer);
+  }
+
+  // build content
+  expContainer.innerHTML = '';
+  const header = document.createElement('div');
+  header.style.display = 'flex';
+  header.style.justifyContent = 'space-between';
+  header.style.alignItems = 'center';
+  header.style.marginBottom = '6px';
+  const title = document.createElement('div'); title.textContent = 'Experience'; title.style.fontWeight = '600';
+  const lvl = document.createElement('div'); lvl.textContent = `Level ${level}`; lvl.style.fontSize = '0.95rem';
+  header.appendChild(title); header.appendChild(lvl);
+
+  const barWrap = document.createElement('div');
+  barWrap.style.width = '100%';
+  barWrap.style.background = 'rgba(0,0,0,0.06)';
+  barWrap.style.borderRadius = '10px';
+  barWrap.style.height = '12px';
+  barWrap.style.overflow = 'hidden';
+
+  const bar = document.createElement('div');
+  const pct = Math.max(0, Math.min(100, Math.round((exp / 30) * 100)));
+  bar.style.width = pct + '%';
+  // use CSS variable for accent so the bar updates automatically with theme
+  bar.style.background = 'var(--button-bg, #007bff)';
+  bar.style.height = '100%';
+  bar.style.transition = 'width 0.35s ease';
+  barWrap.appendChild(bar);
+
+  const footer = document.createElement('div');
+  footer.style.display = 'flex'; footer.style.justifyContent = 'space-between'; footer.style.marginTop = '6px'; footer.style.fontSize = '0.85rem';
+  const expText = document.createElement('div'); expText.textContent = `${exp} / 30 XP`;
+  const pctText = document.createElement('div'); pctText.textContent = `${pct}%`;
+  footer.appendChild(expText); footer.appendChild(pctText);
+
+  expContainer.appendChild(header);
+  expContainer.appendChild(barWrap);
+  expContainer.appendChild(footer);
+
+  // make EXP text inherit the theme text color (via CSS var) so it updates when the theme changes
+  expContainer.style.color = 'var(--text-color, ' + (document.body.style.color || '#000') + ')';
+}
+
 // ========== INITIAL SETUP ==========
 document.addEventListener('DOMContentLoaded', () => {
   setMode(25, "focus");
@@ -333,4 +513,5 @@ document.addEventListener('DOMContentLoaded', () => {
   renderThemes();
   applyTheme(selectedTheme);
   updateStatsUI(); // ✅ ensures stats section is ready on load
+  try { updateExpUI(); } catch (e) { /* ignore */ }
 });
